@@ -3,6 +3,8 @@ import http from "http";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { Server } from "socket.io";
+import User from "./models/user.model.js";
+
 dotenv.config();
 
 const port = process.env.PORT || 6000;
@@ -25,15 +27,16 @@ const io = new Server(server, {
   cors: {
     origin: process.env.NEXT_BASE_URL,
   },
-}); 
+});
 
 io.on("connection", (socket) => {
-    console.log(socket.id) 
-    socket.on("identity", (data) => {
-      console.log(data)
-    })
-})
-
+  socket.on("identity", async (userId) => {
+    await User.findByIdAndUpdate(userId, {
+      socketId: socket.id,
+      isOnline: true,
+    });
+  });
+});
 
 server.listen(port, () => {
   connectDb();
