@@ -20,6 +20,7 @@ const connectDb = async () => {
 };
 
 const app = express();
+app.use(express.json());
 
 const server = http.createServer(app);
 
@@ -29,8 +30,21 @@ const io = new Server(server, {
   },
 });
 
-io.on("connection", (socket) => { 
+app.post("/emit", async (req, res) => {
+  const { event, userId, data } = req.body;
 
+  try {
+    const user = await User.findById(userId);
+    if (user.socketId) {
+      io.to(user.socketId).emit(event, data);
+    }
+    return res.json({ success: true });
+  } catch (error) {
+    return res.json({ success: false });
+  }
+});
+
+io.on("connection", (socket) => {
   socket.on("identity", async (userId) => {
     socket.userId = userId;
     await User.findByIdAndUpdate(userId, {
@@ -39,7 +53,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("update-location", async ({userId, latitude, longitude}) => {
+  socket.on("update-location", async ({ userId, latitude, longitude }) => {
     await User.findByIdAndUpdate(userId, {
       location: {
         type: "Point",
