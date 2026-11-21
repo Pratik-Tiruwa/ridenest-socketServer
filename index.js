@@ -62,6 +62,17 @@ io.on("connection", (socket) => {
     });
   });
 
+  socket.on("join-ride", (bookingId) => {
+    console.log("join ride", bookingId);
+    socket.join(`ride-${bookingId}`);
+  }); 
+
+  socket.on("driver-location-update", ({bookingId, latitude, longitude}) => { 
+    io.to(`ride-${bookingId}`).emit("driver-location", { 
+      latitude, longitude
+    })
+  })
+
   socket.on("disconnect", async () => {
     if (!socket.userId) return;
     await User.findByIdAndUpdate(socket.userId, {
